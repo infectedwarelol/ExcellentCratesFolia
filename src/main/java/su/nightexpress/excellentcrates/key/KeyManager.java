@@ -66,7 +66,12 @@ public class KeyManager extends AbstractManager<CratesPlugin> {
 
     private void loadKeys() {
         for (File file : FileUtil.getFiles(plugin.getDataFolder() + Config.DIR_KEYS, true)) {
-            String id = Strings.varStyle(FileConfig.getName(file)).orElseThrow(); // TODO Handle
+            String id = Strings.varStyle(FileConfig.getName(file)).orElse(null);
+            if (id == null) {
+                this.plugin.error("Key file '" + file.getName() + "' has an invalid name and was skipped.");
+                continue;
+            }
+
             this.loadKey(new CrateKey(this.plugin, file.toPath(), id));
         }
         this.plugin.info("Loaded " + this.keyByIdMap.size() + " crate keys.");
@@ -77,7 +82,7 @@ public class KeyManager extends AbstractManager<CratesPlugin> {
             key.load();
             this.keyByIdMap.put(key.getId(), key);
         }
-        catch (IllegalStateException exception) {
+        catch (RuntimeException exception) {
             this.plugin.error("Key not loaded: '" + key.getPath() + "'.");
             exception.printStackTrace();
         }
