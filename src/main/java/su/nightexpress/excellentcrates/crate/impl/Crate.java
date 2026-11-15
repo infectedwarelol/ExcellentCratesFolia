@@ -3,7 +3,6 @@ package su.nightexpress.excellentcrates.crate.impl;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -222,12 +221,6 @@ public class Crate implements ConfigBacked {
         });
 
         this.blockPositions.addAll(config.getStringList("Block.Positions").stream().map(WorldPos::deserialize).toList());
-        if (!Config.isCrateInAirBlocksAllowed()) {
-            this.blockPositions.removeIf(pos -> {
-                Block block = pos.toBlock();
-                return block != null && block.isEmpty();
-            });
-        }
 
         this.setPushbackEnabled(config.getBoolean("Block.Pushback.Enabled"));
         this.setHologramEnabled(config.getBoolean("Block.Hologram.Enabled"));
@@ -524,6 +517,10 @@ public class Crate implements ConfigBacked {
         this.plugin.getCrateManager().removeCratePositions(this);
         this.blockPositions.add(pos);
         this.plugin.getCrateManager().addCratePositions(this);
+    }
+
+    public void removeBlockPosition(@NotNull WorldPos pos) {
+        this.blockPositions.remove(pos);
     }
 
     public void clearBlockPositions() {

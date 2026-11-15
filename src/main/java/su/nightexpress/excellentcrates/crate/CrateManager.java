@@ -190,7 +190,11 @@ public class CrateManager extends AbstractManager<CratesPlugin> {
 
     private void loadCrates() {
         for (File file : FileUtil.getFiles(plugin.getDataFolder() + Config.DIR_CRATES, false)) {
-            String id = Strings.varStyle(FileConfig.getName(file)).orElseThrow(); // TODO Handle
+            String id = Strings.varStyle(FileConfig.getName(file)).orElse(null);
+            if (id == null) {
+                this.plugin.error("Crate file '" + file.getName() + "' has an invalid name and was skipped.");
+                continue;
+            }
 
             Crate crate = new Crate(plugin, file.toPath(), id);
             this.loadCrate(crate);
@@ -203,10 +207,28 @@ public class CrateManager extends AbstractManager<CratesPlugin> {
             crate.load();
             this.crateByIdMap.put(crate.getId(), crate);
             this.addCratePositions(crate);
+            this.validateCratePositions(crate);
         }
-        catch (IllegalStateException exception) {
+        catch (RuntimeException exception) {
             this.plugin.error("Crate '" + crate.getPath() + "' can not be loaded.");
             exception.printStackTrace();
+        }
+    }
+
+    private void validateCratePositions(@NotNull Crate crate) {
+        if (Config.isCrateInAirBlocksAllowed()) return;
+
+        for (WorldPos pos : crate.getBlockPositions()) {
+            Location location = pos.toLocation();
+            if (location == null) continue;
+
+            this.plugin.runTask(location, () -> {
+                if (!location.getBlock().isEmpty()) return;
+
+                crate.removeBlockPosition(pos);
+                this.crateByPosMap.remove(pos, crate);
+                crate.markDirty();
+            });
         }
     }
 
